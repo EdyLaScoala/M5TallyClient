@@ -240,7 +240,7 @@ class MainWindow(QtWidgets.QWidget):
         """)
 
         new_m5_action = QtWidgets.QAction("New M5", self)
-        new_m5_action.triggered.connect(self.open_flasher)
+        new_m5_action.triggered.connect(self.check_for_python)
         menu_bar.addAction(new_m5_action)
 
         refresh_action = QtWidgets.QAction("Refresh Devices", self)
@@ -369,6 +369,18 @@ class MainWindow(QtWidgets.QWidget):
         self.about_label.setText(f"About Device ID: {dev_id}")
         self.ip_label.setText(f"M5 Device IP: {ip}")
         self.prompt_label.setText(f"Send Prompt to Device ID: {dev_id}")
+
+    def check_for_python(self):
+        try:
+            subprocess.check_output(["python", "--version"], stderr=subprocess.STDOUT)
+            self.open_flasher()
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            QMessageBox.warning(
+                self, 
+                "Python Not Found", 
+                "Python is not installed or not found in PATH.\n"
+                "Please install Python from python.org and make sure to check 'Add Python to PATH' during installation."
+            )
 
     def open_flasher(self):
         try:
