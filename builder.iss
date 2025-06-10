@@ -29,6 +29,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 
 [Files]
 Source: "C:\Users\msg4e\Desktop\dist\{#MyAppExeName}"; DestDir: "{userappdata}\{#MyAppName}"; Flags: ignoreversion
+Source: "C:\Users\msg4e\Desktop\dist\flasher.exe"; DestDir: "{userappdata}\{#MyAppName}"; Flags: ignoreversion
 Source: "C:\Users\msg4e\Desktop\Installer\M5TallyClient\*"; DestDir: "{userappdata}\{#MyAppName}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
