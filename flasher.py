@@ -1,11 +1,16 @@
 import sys
 import os
-import subprocess
-import importlib.util
-import tkinter as tk
-from tkinter import messagebox
 import io
 import contextlib
+from tkinter import *
+from tkinter import ttk, messagebox
+import serial.tools.list_ports
+from threading import Thread
+import requests
+import esptool
+import ctypes
+import time
+import json
 
 # -----------------------------------------------------------------------------
 # UI Theme Colors
@@ -28,51 +33,7 @@ if getattr(sys, "frozen", False):
         if getattr(sys, attr) is None:
             setattr(sys, attr, dummy)
 
-# -----------------------------------------------------------------------------
-# Check & install dependencies
-# -----------------------------------------------------------------------------
-def check_and_install_missing_dependencies():
-    required = {"serial": "pyserial", "esptool": "esptool", "requests": "requests"}
-    missing = []
-    for mod, pkg in required.items():
-        try: importlib.import_module(mod)
-        except ImportError: missing.append(pkg)
-    if not missing: return True
-    if getattr(sys, "frozen", False):
-        for pkg in missing:
-            try: subprocess.check_call([sys.executable, "-m", "pip", "install", pkg])
-            except subprocess.CalledProcessError: return False
-        return True
-    try:
-        root = tk.Tk(); root.title("Missing dependencies"); root.configure(bg=BG)
-        tk.Label(root, text="Missing packages:", bg=BG, fg=FG).pack(pady=10)
-        for pkg in missing: tk.Label(root, text=f"- {pkg}", bg=BG, fg=FG).pack(anchor="w", padx=20)
-        def install():
-            ok = True
-            for pkg in missing:
-                try: subprocess.check_call([sys.executable, "-m", "pip", "install", pkg])
-                except: ok = False
-            root.destroy()
-        tk.Button(root, text="Install now", command=install, bg=ABG, fg=FG).pack(pady=20)
-        root.mainloop()
-        return False
-    except: return False
 
-if not check_and_install_missing_dependencies(): sys.exit(1)
-
-# -----------------------------------------------------------------------------
-# Imports (after dependencies)
-# -----------------------------------------------------------------------------
-from tkinter import *  # noqa
-import base64
-from tkinter import ttk
-import serial.tools.list_ports
-from threading import Thread
-import requests
-import esptool
-import ctypes
-import time
-import json
 
 # -----------------------------------------------------------------------------
 # Helpers (appdata_path, load_font)
@@ -123,11 +84,12 @@ win.geometry(f"{int(W/1.5)}x{int(H/1.4)}")
 win.resizable(False,True)
 win.update()
 
-# Example base64 PNG (replace with your own)
-icon_base64 = """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"""
-icon_data = base64.b64decode(icon_base64)
-icon_image = PhotoImage(data=icon_base64)
-win.iconphoto(False, icon_image)
+try:
+    icon_path = appdata_path("Assets/flasher.ico")
+    win.iconbitmap(default=icon_path)  # 'default' parameter ensures it appears in both window and taskbar
+except Exception as e:
+    print(f"Failed to set icon: {e}")  # Debug line
+    pass
 
 save_data = {
     "network": "",
@@ -513,7 +475,6 @@ def ServerCommunication():
                 else:
                     Compile_Progress = "WAIT"
             except Exception as e:
-                print(e)
                 Compile_Progress = None
                 messagebox.showerror("Server error",
                                      "The server could not respond with a valid Job ID.\nPlease check your internet connection and try again!")
