@@ -240,7 +240,7 @@ class MainWindow(QtWidgets.QWidget):
         """)
 
         new_m5_action = QtWidgets.QAction("New M5", self)
-        new_m5_action.triggered.connect(self.check_for_python)
+        new_m5_action.triggered.connect(self.open_flasher)
         menu_bar.addAction(new_m5_action)
 
         refresh_action = QtWidgets.QAction("Refresh Devices", self)
@@ -370,28 +370,15 @@ class MainWindow(QtWidgets.QWidget):
         self.ip_label.setText(f"M5 Device IP: {ip}")
         self.prompt_label.setText(f"Send Prompt to Device ID: {dev_id}")
 
-    def check_for_python(self):
-        try:
-            subprocess.check_output(["python", "--version"], stderr=subprocess.STDOUT)
-            self.open_flasher()
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            QMessageBox.warning(
-                self, 
-                "Python Not Found", 
-                "Python is not installed or not found in PATH.\n"
-                "Please install Python from python.org and make sure to check 'Add Python to PATH' during installation."
-            )
-
     def open_flasher(self):
         try:
-            flasher_path = resource_path("flasher.py")
-            print(f"Flasher path: {flasher_path}")
+            flasher_path = resource_path("flasher.exe")            
             if os.path.exists(flasher_path):
                 flags = subprocess.DETACHED_PROCESS if os.name == 'nt' else 0
-                subprocess.Popen(["python", flasher_path], creationflags=flags)
+                subprocess.Popen(flasher_path, creationflags=flags)
                 return
 
-            QMessageBox.warning(self, "Error", "Flasher script not found in any known location.")
+            QMessageBox.warning(self, "Error", "Flasher executable not found.")
 
         except Exception as e:
             QMessageBox.warning(self, "Error", f"Could not launch flasher: {e}")
